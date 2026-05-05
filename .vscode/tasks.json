@@ -1,0 +1,63 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start dev server",
+      "type": "npm",
+      "script": "dev",
+      "group": { "kind": "build", "isDefault": true },
+      "presentation": { "panel": "dedicated", "reveal": "always" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Start Docker services",
+      "type": "shell",
+      "command": "docker-compose up -d",
+      "presentation": { "panel": "dedicated", "reveal": "always" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Stop Docker services",
+      "type": "shell",
+      "command": "docker-compose down",
+      "presentation": { "panel": "shared", "reveal": "silent" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run DB migration",
+      "type": "npm",
+      "script": "db:migrate",
+      "presentation": { "panel": "dedicated", "reveal": "always" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Open Prisma Studio",
+      "type": "npm",
+      "script": "db:studio",
+      "presentation": { "panel": "dedicated", "reveal": "always" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run tests",
+      "type": "npm",
+      "script": "test",
+      "group": { "kind": "test", "isDefault": true },
+      "presentation": { "panel": "dedicated", "reveal": "always" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run tests with coverage",
+      "type": "npm",
+      "script": "test:coverage",
+      "presentation": { "panel": "dedicated", "reveal": "always" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Lint & fix",
+      "type": "npm",
+      "script": "lint:fix",
+      "presentation": { "panel": "shared", "reveal": "always" },
+      "problemMatcher": ["$eslint-stylish"]
+    }
+  ]
+}

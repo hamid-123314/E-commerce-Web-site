@@ -1,0 +1,33 @@
+{
+  "recommendations": [
+    // ── Core ──────────────────────────────────────────────────────────────────
+    "esbenp.prettier-vscode",         // Code formatter
+    "dbaeumer.vscode-eslint",         // ESLint integration
+    "Prisma.prisma",                  // Prisma schema syntax + formatting
+    "christian-kohler.path-intellisense", // Autocomplete file paths
+
+    // ── API & HTTP ────────────────────────────────────────────────────────────
+    "humao.rest-client",              // Test APIs directly in VSCode (.http files)
+    "rangav.vscode-thunder-client",   // Postman alternative built into VSCode
+
+    // ── Database ──────────────────────────────────────────────────────────────
+    "cweijan.vscode-postgresql-client2", // Postgres GUI in sidebar
+
+    // ── Git ───────────────────────────────────────────────────────────────────
+    "eamodio.gitlens",                // Git blame, history inline
+    "mhutchie.git-graph",             // Visual git branch graph
+
+    // ── Docker ───────────────────────────────────────────────────────────────
+    "ms-azuretools.vscode-docker",    // Docker compose UI, container logs
+
+    // ── DX / Productivity ─────────────────────────────────────────────────────
+    "formulahendry.auto-rename-tag",  // For JSX in client code
+    "streetsidesoftware.code-spell-checker", // Catch typos in variable names
+    "wayou.vscode-todo-highlight",    // Highlights TODO / FIXME comments
+    "aaron-bond.better-comments",     // Color-coded comment types
+    "PKief.material-icon-theme",      // File icons — easier folder navigation
+
+    // ── Environment ───────────────────────────────────────────────────────────
+    "mikestead.dotenv"                // .env file syntax highlighting
+  ]
+}
