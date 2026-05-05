@@ -6,7 +6,7 @@ import { AuthService } from '../services/auth.service.js'
 
 export class AuthController {
 
-    static async regiter(req, res, next) {
+    static async register(req, res, next) {
         try {
             const { user, accessToken, refreshToken } = await AuthService.register(req.body)
             res.status(201).json({ status: 'success', data: { user, accessToken, refreshToken } })
@@ -34,6 +34,13 @@ export class AuthController {
             await AuthService.logout(req.user.id, refreshToken)
             res.status(204).send()
         } catch(err) { next(err) }
+    }
+
+    static async getMe(req, res, next) {
+    try {
+        const user = await AuthService.getMe(req.user.id)
+        res.status(200).json({ status: 'success', data: { user } })
+    } catch (err) { next(err) }
     }
 
 }

@@ -11,6 +11,7 @@ const REFRESH_PREFIX = 'refresh:'  // Redis key prefix for refresh tokens
 
 export class AuthService {
 
+      // ── Register ────────────────────────────────────────────────────────────────
     static async register ({ name, email, password }){
         const exists = await  prisma.user.findUnique({ where : { email}})
         if ( exists ) throw AppError.conflict('Email already in use')
@@ -25,6 +26,7 @@ export class AuthService {
         return { user, ...tokens }
     }
 
+    // ── Login ───────────────────────────────────────────────────────────────────
     static async login ({ email, password }) {
         const user = await prisma.user.findunique({ where: { email } })
         if ( !user ) throw AppError.unauthorized('Invalid credentials')
@@ -38,6 +40,7 @@ export class AuthService {
         return { user: safeUser, ...tokens }
     }
 
+    // ── Refresh tokens (rotation) ───────────────────────────────────────────────
     static async refreshToken (refreshToken) {
         if( !refreshToken ) throw AppError.unauthorized("Refresh token required")
         
@@ -72,6 +75,18 @@ export class AuthService {
         }
     }
 
+    // ── Me ──────────────────────────────────────────────────────────────────────
+    static async getMe(userId){
+        const user = prisma.user.findUnique({
+            where: { id: userId},
+            select: { 
+                id: true, name: true, email: true, role: true, createdAt: true, 
+                _count: { select: { orders: true}}
+            },
+        })
+        if (!user) throw AppError.notFound('User not found')
+        return user
+    }
 
     // ── Private helpers ─────────────────────────────────────────────────────────
     static #generateTokens(user) {
