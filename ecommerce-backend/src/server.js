@@ -4,8 +4,8 @@ import { logger } from './config/logger.js'
 import { prisma } from './config/database.js'
 import { redis } from './config/redis.js'
 
-const server = app.listen( env.PORT, () => {
-    logger.info(`Server running on port ${env.PORT} [${env.NODE_ENV}]`)
+const server = app.listen(env.PORT, '0.0.0.0', () => {
+  logger.info(`🚀 Server running on port ${env.PORT} [${env.NODE_ENV}]`)
 })
 
 // ── Graceful shutdown ─────────────────────────────────────────────────────────

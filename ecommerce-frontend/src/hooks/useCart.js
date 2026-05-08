@@ -1,62 +1,155 @@
-// hooks/useProducts.js
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import { productService, categoryService } from '@/lib/services.js'
+import { cartService, orderService, paymentService } from '@/lib/services.js'
 import { getErrorMessage } from '@/lib/api.js'
 
-export const PRODUCT_KEYS = {
-  all:    ['products'],
-  list:   (params) => ['products', 'list', params],
-  detail: (id)     => ['products', 'detail', id],
+export const useCart = () =>
+  useQuery({
+    queryKey: ['cart'],
+    queryFn:  cartService.get,
+    retry: 1,
+  })
+
+export const useAddToCart = () => {
+  const qc = useQueryClient()
+
+  return useMutation({
+    // ✅ mutationFn only sends what the API needs — NOT the full product object
+    mutationFn: ({ productId, quantity }) =>
+      cartService.addItem({ productId, quantity }),
+
+    // ✅ Full optimistic update — UI changes instantly, no waiting for API
+    onMutate: async ({ product, productId, quantity }) => {
+      // Cancel in-flight cart queries to avoid overwriting our optimistic update
+      await qc.cancelQueries({ queryKey: ['cart'] })
+
+      // Snapshot current cart state for rollback on error
+      const previousCart = qc.getQueryData(['cart'])
+
+      // Immediately update the cache
+      qc.setQueryData(['cart'], (old) => {
+        const items    = old?.items ?? []
+        const pid      = product?.id ?? productId
+        const existing = items.find(i => i.productId === pid)
+
+        const newItems = existing
+          ? items.map(i =>
+              i.productId === pid
+                ? { ...i, quantity: i.quantity + quantity }
+                : i
+            )
+          : [
+              ...items,
+              {
+                productId: pid,
+                quantity,
+                unitPrice: Number(product?.price ?? 0),
+                product: {
+                  id:       pid,
+                  name:     product?.name     ?? '',
+                  imageUrl: product?.imageUrl ?? null,
+                },
+              },
+            ]
+
+        const total = newItems.reduce(
+          (s, i) => s + Number(i.unitPrice) * i.quantity, 0
+        )
+        return { items: newItems, total: Number(total.toFixed(2)) }
+      })
+
+      return { previousCart }
+    },
+
+    onSuccess: (serverCart) => {
+      // Sync with real server data after API responds
+      if (serverCart) qc.setQueryData(['cart'], serverCart)
+      else qc.invalidateQueries({ queryKey: ['cart'] })
+      toast.success('Added to cart')
+    },
+
+    onError: (err, _, context) => {
+      // Rollback to previous cart state
+      if (context?.previousCart) {
+        qc.setQueryData(['cart'], context.previousCart)
+      }
+      toast.error(getErrorMessage(err))
+    },
+
+    onSettled: () => {
+      // Always resync with server after mutation
+      qc.invalidateQueries({ queryKey: ['cart'] })
+    },
+  })
 }
 
-export const useProducts = (params = {}) =>
-  useQuery({
-    queryKey: PRODUCT_KEYS.list(params),
-    queryFn:  () => productService.getAll(params),
-  })
-
-export const useProduct = (id) =>
-  useQuery({
-    queryKey: PRODUCT_KEYS.detail(id),
-    queryFn:  () => productService.getById(id),
-    enabled:  !!id,
-  })
-
-export const useCategories = () =>
-  useQuery({
-    queryKey: ['categories'],
-    queryFn:  categoryService.getAll,
-    staleTime: 1000 * 60 * 10, // 10 min
-  })
-
-export const useCreateProduct = () => {
+export const useUpdateCartItem = () => {
   const qc = useQueryClient()
+
   return useMutation({
-    mutationFn: productService.create,
-    onSuccess: () => { qc.invalidateQueries(PRODUCT_KEYS.all); toast.success('Product created') },
-    onError:   (err) => toast.error(getErrorMessage(err)),
+    mutationFn: ({ productId, quantity }) =>
+      cartService.updateItem(productId, quantity),
+
+    onMutate: async ({ productId, quantity }) => {
+      await qc.cancelQueries({ queryKey: ['cart'] })
+      const previousCart = qc.getQueryData(['cart'])
+
+      qc.setQueryData(['cart'], (old) => {
+        const items = (old?.items ?? [])
+          .map(i => i.productId === productId ? { ...i, quantity } : i)
+          .filter(i => i.quantity > 0)
+        const total = items.reduce((s, i) => s + Number(i.unitPrice) * i.quantity, 0)
+        return { ...old, items, total: Number(total.toFixed(2)) }
+      })
+
+      return { previousCart }
+    },
+
+    onError: (err, _, context) => {
+      if (context?.previousCart) qc.setQueryData(['cart'], context.previousCart)
+      toast.error(getErrorMessage(err))
+    },
+
+    onSettled: () => qc.invalidateQueries({ queryKey: ['cart'] }),
   })
 }
 
-export const useUpdateProduct = () => {
+export const useRemoveCartItem = () => {
   const qc = useQueryClient()
+
   return useMutation({
-    mutationFn: ({ id, data }) => productService.update(id, data),
-    onSuccess: (_, { id }) => {
-      qc.invalidateQueries(PRODUCT_KEYS.all)
-      qc.invalidateQueries(PRODUCT_KEYS.detail(id))
-      toast.success('Product updated')
+    mutationFn: cartService.removeItem,
+
+    onMutate: async (productId) => {
+      await qc.cancelQueries({ queryKey: ['cart'] })
+      const previousCart = qc.getQueryData(['cart'])
+
+      qc.setQueryData(['cart'], (old) => {
+        const items = (old?.items ?? []).filter(i => i.productId !== productId)
+        const total = items.reduce((s, i) => s + Number(i.unitPrice) * i.quantity, 0)
+        return { ...old, items, total: Number(total.toFixed(2)) }
+      })
+
+      return { previousCart }
+    },
+
+    onSuccess:  () => toast.success('Item removed'),
+
+    onError: (err, _, context) => {
+      if (context?.previousCart) qc.setQueryData(['cart'], context.previousCart)
+      toast.error(getErrorMessage(err))
+    },
+
+    onSettled: () => qc.invalidateQueries({ queryKey: ['cart'] }),
+  })
+}
+
+export const useCheckout = () =>
+  useMutation({
+    mutationFn: async (items) => {
+      const order = await orderService.create(items)
+      const { checkoutUrl } = await paymentService.createCheckout(order.id)
+      window.location.href = checkoutUrl
     },
     onError: (err) => toast.error(getErrorMessage(err)),
   })
-}
-
-export const useDeleteProduct = () => {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: productService.delete,
-    onSuccess: () => { qc.invalidateQueries(PRODUCT_KEYS.all); toast.success('Product deleted') },
-    onError:   (err) => toast.error(getErrorMessage(err)),
-  })
-}

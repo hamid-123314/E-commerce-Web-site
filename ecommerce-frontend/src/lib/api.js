@@ -1,47 +1,76 @@
-// lib/api.js — Axios instance avec intercepteurs JWT + refresh automatique
 import axios from 'axios'
 import { useAuthStore } from '@/store/auth.store.js'
 
+// ── Direct call to backend — bypasses Vite proxy entirely ────────────────────
+// Vite proxy has IPv6/IPv4 issues on Windows — calling backend directly fixes it
 export const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: 'http://localhost:4000/api/v1',
   headers: { 'Content-Type': 'application/json' },
-  timeout: 15000,
+  timeout: 30000,
+  withCredentials: false,
 })
 
-// ── Request interceptor : injecte le token dans chaque requête ────────────────
+// Add a request interceptor to handle session IDs if you use them
+api.interceptors.request.use((config) => {
+  const sessionId = localStorage.getItem('sessionId');
+  if (sessionId) {
+    config.headers['x-session-id'] = sessionId;
+  }
+  return config;
+});
+
+// ── DEBUG logs ────────────────────────────────────────────────────────────────
+if (import.meta.env.DEV) {
+  api.interceptors.request.use((config) => {
+    console.log(`[API] → ${config.method?.toUpperCase()} ${config.url}`, config.data ?? '')
+    return config
+  })
+}
+
+// ── Request interceptor : inject token + session ──────────────────────────────
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken
   if (token) config.headers.Authorization = `Bearer ${token}`
 
-  // Panier invité — session ID depuis localStorage
   const sessionId = localStorage.getItem('sessionId')
   if (sessionId) config.headers['x-session-id'] = sessionId
 
   return config
 })
 
-// ── Response interceptor : refresh automatique si 401 ─────────────────────────
+// ── Response interceptor : auto refresh on 401 ───────────────────────────────
 let isRefreshing = false
-let failedQueue = []
+let failedQueue  = []
 
 const processQueue = (error, token = null) => {
   failedQueue.forEach(({ resolve, reject }) => {
-    if (error) reject(error)
-    else resolve(token)
+    error ? reject(error) : resolve(token)
   })
   failedQueue = []
 }
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (import.meta.env.DEV) {
+      console.log(`[API] ← ${response.status} ${response.config.url}`)
+    }
+    return response
+  },
   async (error) => {
+    if (import.meta.env.DEV) {
+      console.error(
+        `[API] ✗ ${error.config?.method?.toUpperCase()} ${error.config?.url}`,
+        '\nStatus:', error.response?.status,
+        '\nMessage:', error.response?.data?.message ?? error.message,
+      )
+    }
+
     const original = error.config
 
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true
 
       if (isRefreshing) {
-        // File d'attente — toutes les requêtes attendent le nouveau token
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject })
         }).then(token => {
@@ -54,7 +83,10 @@ api.interceptors.response.use(
       const { refreshToken, setTokens, logout } = useAuthStore.getState()
 
       try {
-        const { data } = await axios.post('/api/v1/auth/refresh', { refreshToken })
+        const { data } = await axios.post(
+          'http://127.0.0.1:4000/api/v1/auth/refresh',
+          { refreshToken }
+        )
         const { accessToken, refreshToken: newRefresh } = data.data
         setTokens(accessToken, newRefresh)
         processQueue(null, accessToken)
@@ -74,6 +106,5 @@ api.interceptors.response.use(
   }
 )
 
-// ── Helper pour extraire le message d'erreur ──────────────────────────────────
 export const getErrorMessage = (error) =>
   error?.response?.data?.message ?? error?.message ?? 'Something went wrong'

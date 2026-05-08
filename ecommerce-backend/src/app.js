@@ -13,43 +13,53 @@ import v1Router from './routes/v1/index.js'
 
 const app = express()
 
-// ── Security ─────────────────────────────────────────────────────────────────
-app.use(helmet())
-app.use(cors({
-    origin: env.CLIENT_URL,
-    credentials: true,
+// ── CORS — must be FIRST before helmet and everything else ───────────────────
+const corsOptions = {
+  origin: 'http://localhost:5173',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-session-id'],
+  optionsSuccessStatus: 200, // some browsers (IE11) choke on 204
+}
+
+// Handle ALL preflight OPTIONS requests immediately
+app.options('*', cors(corsOptions))
+app.use(cors(corsOptions))
+
+// ── Security ──────────────────────────────────────────────────────────────────
+app.use(helmet({
+  crossOriginResourcePolicy: false, // don't block cross-origin requests
 }))
 
 // ── Rate limiting ─────────────────────────────────────────────────────────────
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max : 100,
-    standardHeaders : true,
-    legacyHeaders: false,
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
 })
 app.use('/api', limiter)
 
 // ── Body parsing ──────────────────────────────────────────────────────────────
-// Raw body for Stripe webhook signature verification (must come before json())
-app.use('/api/v1/payments/webhook', express.raw({type: 'application/json'}))
-app.use(express.json({ limit : '10kb'}))
-app.use(express.urlencoded({ extended : true }))
+app.use('/api/v1/payments/webhook', express.raw({ type: 'application/json' }))
+app.use(express.json({ limit: '10kb' }))
+app.use(express.urlencoded({ extended: true }))
 app.use(compression())
 
 // ── Logging ───────────────────────────────────────────────────────────────────
-const morganFormat = env.NODE_ENV === 'production' ? 'combined' : 'dev' 
+const morganFormat = env.NODE_ENV === 'production' ? 'combined' : 'dev'
 app.use(morgan(morganFormat, {
-    stream: { write : (msg) => logger.http(msg.trim()) },
-    skip: () => env.NODE_ENV === 'test',
+  stream: { write: (msg) => logger.http(msg.trim()) },
+  skip: () => env.NODE_ENV === 'test',
 }))
 
 // ── Health check ──────────────────────────────────────────────────────────────
-app.get('/health', (req,res) => {
-    res.status(200).json({
-        status: 'ok',
-        environment : env.NODE_ENV,
-        timestamp: new Date().toISOString(),
-    })
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    environment: env.NODE_ENV,
+    timestamp: new Date().toISOString(),
+  })
 })
 
 // ── API routes ────────────────────────────────────────────────────────────────

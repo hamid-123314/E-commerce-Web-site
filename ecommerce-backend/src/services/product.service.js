@@ -24,7 +24,7 @@ export class ProductService {
         take,
         ...(cursor && { skip: 1, cursor: { id: cursor }}),
         orderBy: { [sort]: order},
-        include : { category: { select: { id: true, name: true}}} 
+        include : { category: { select: { id: true, name: true}}}
       }),
       prisma.product.count({ where }),
     ])
@@ -49,11 +49,15 @@ export class ProductService {
     return product
   }
 
-  static async create(data){
-    const product = prisma.product.create({
-      data,
-      inculde: { category: true}
-    })
+  static async create(data, imageData){
+    const product = await prisma.product.create({
+    data: {
+      ...data,           // Spread the existing product fields (name, price, etc.)
+      imageUrl: imageData.imageUrl, // Add the new image URL
+      imagePublicId: imageData.imagePublicId
+    },
+    include: { category: true }
+  })
 
     await redis.delPattern('products:*')
     return product
@@ -78,5 +82,5 @@ export class ProductService {
     await cache.del(`product:${id}`)
     await cache.delPattern('products:*')
   }
-  
+
 }

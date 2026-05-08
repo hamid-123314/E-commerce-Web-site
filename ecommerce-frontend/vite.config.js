@@ -13,8 +13,15 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:4000',
+        target: 'http://127.0.0.1:4000', // 127.0.0.1 instead of localhost — avoids IPv6 resolution issues on Windows
         changeOrigin: true,
+        secure: false,
+        ws: false,
+        configure: (proxy) => {
+          proxy.on('error', (err) => console.log('[proxy error]', err.message))
+          proxy.on('proxyReq', (_, req) => console.log('[proxy]', req.method, req.url))
+          proxy.on('proxyRes', (res, req) => console.log('[proxy]', res.statusCode, req.url))
+        },
       },
     },
   },

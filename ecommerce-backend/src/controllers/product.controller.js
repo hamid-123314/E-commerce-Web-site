@@ -1,4 +1,6 @@
 import { ProductService } from '../services/product.service.js'
+import { UploadService } from '../services/upload.service.js'
+
 
 export class ProductController {
   static async getAll(req, res, next) {
@@ -17,7 +19,12 @@ export class ProductController {
 
   static async create(req, res, next) {
     try {
-      const product = await ProductService.create(req.body)
+      // req.file.path is provided by the cloudinary-multer storage
+      const imageData = {
+        imageUrl: req.file ? req.file.path : undefined,
+        imagePublicId: req.file ? req.file.filename : undefined
+      };
+      const product = await ProductService.create(req.body, imageData)
       res.status(201).json({ status: 'success', data: { product } })
     } catch (err) { next(err) }
   }
@@ -33,6 +40,18 @@ export class ProductController {
     try {
       await ProductService.delete(req.params.id)
       res.status(204).send()
+    } catch (err) { next(err) }
+  }
+
+  static async uploadUrl(req, res, next) {
+    try {
+      const { contentType, contentLength } = z.object({
+        contentType:   z.string(),
+        contentLength: z.number(),
+      }).parse(req.body)
+
+    const result = await UploadService.getPresignedUploadUrl(contentType, contentLength)
+    res.json({ status: 'success', data: result })
     } catch (err) { next(err) }
   }
 }

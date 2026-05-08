@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 enum Role {
@@ -48,7 +47,8 @@ model Product {
   description String?
   price       Decimal     @db.Decimal(10, 2)
   stock       Int         @default(0)
-  imageUrl    String?
+  imageUrl    String?     @default("https://via.placeholder.com/300")
+  imagePublicId   String?
   categoryId  String
   category    Category    @relation(fields: [categoryId], references: [id])
   orderItems  OrderItem[]

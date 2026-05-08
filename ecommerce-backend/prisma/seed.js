@@ -1,7 +1,8 @@
-import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
+import 'dotenv/config';
+import { prisma } from '../src/config/database.js'
 
-const prisma = new PrismaClient();
+
 
 async function main() {
   console.log("🌱 Seeding database...");
@@ -68,6 +69,7 @@ async function main() {
         description: "100% organic cotton, relaxed fit",
         price: 29.99,
         stock: 150,
+        imageUrl: "https://res.cloudinary.com/dk4m2avs0/image/upload/v1778262326/TCT_4000_Short-Sleeve-Classic-Crew_WHITE_Large_Ecomm_2025_JUN_2_twzmuu.jpg",
         categoryId: tshirts.id,
       },
     }),
@@ -77,6 +79,7 @@ async function main() {
         description: "Cotton blend, slim fit",
         price: 34.99,
         stock: 80,
+        imageUrl: "https://res.cloudinary.com/dk4m2avs0/image/upload/v1778261905/The-Striped-T-shirt-Men-9-SANVT0186-Cover_i5wwe2.jpg",
         categoryId: tshirts.id,
       },
     }),
@@ -86,6 +89,7 @@ async function main() {
         description: "Oversized fit, unisex",
         price: 39.99,
         stock: 60,
+        imageUrl: "https://res.cloudinary.com/dk4m2avs0/image/upload/v1778261975/4f9b6f92a5fddeb1d511bdd71bf38278fd5cdc34_hcxp6n.jpg",
         categoryId: tshirts.id,
       },
     }),
@@ -95,6 +99,7 @@ async function main() {
         description: "Soft modal blend",
         price: 27.99,
         stock: 200,
+        imageUrl: "https://res.cloudinary.com/dk4m2avs0/image/upload/v1778262224/American-Tall-Men-Essential-Tees-Slim-fit-SS-V-Neck-White-Front_be208a57-67a7-4227-96e8-d49c7547bccf_uyjzkx.jpg",
         categoryId: tshirts.id,
       },
     }),
@@ -105,6 +110,7 @@ async function main() {
         description: "Stretch cotton, 4 colors",
         price: 79.99,
         stock: 90,
+        imageUrl: "https://res.cloudinary.com/dk4m2avs0/image/upload/v1778261737/VP0611_PEBBLE_FT_LGE_ljupfy.jpg",
         categoryId: pants.id,
       },
     }),
@@ -114,6 +120,7 @@ async function main() {
         description: "Linen blend, summer edition",
         price: 89.99,
         stock: 45,
+        imageUrl: "https://res.cloudinary.com/dk4m2avs0/image/upload/v1778261877/MAJE149_ywuskb.jpg",
         categoryId: pants.id,
       },
     }),
@@ -123,6 +130,7 @@ async function main() {
         description: "Durable ripstop fabric",
         price: 99.99,
         stock: 30,
+        imageUrl: "https://res.cloudinary.com/dk4m2avs0/image/upload/v1778262134/683667s_roynyr.jpg",
         categoryId: pants.id,
       },
     }),
@@ -133,6 +141,7 @@ async function main() {
         description: "Heavy duty, 15L capacity",
         price: 24.99,
         stock: 300,
+        imageUrl: "https://res.cloudinary.com/dk4m2avs0/image/upload/v1778262008/ORG-12oz-tote-bag_hvobpm.jpg",
         categoryId: accessories.id,
       },
     }),
@@ -142,6 +151,7 @@ async function main() {
         description: "Merino wool, one size",
         price: 34.99,
         stock: 120,
+        imageUrl: "https://res.cloudinary.com/dk4m2avs0/image/upload/v1778262084/Silverstick-Drift-Cuff-British-Wool-Beanie-Celtic-Green_x1gyri.jpg",
         categoryId: accessories.id,
       },
     }),
@@ -151,6 +161,7 @@ async function main() {
         description: "Full-grain leather, silver buckle",
         price: 49.99,
         stock: 5,
+        imageUrl: "https://res.cloudinary.com/dk4m2avs0/image/upload/Hanks-Montana-Brown-Belt-Homepage-Menu_a8d95dbd-f658-4533-9619-2d4ab2285d37_1600x_qudkly.jpg",
         categoryId: accessories.id,
       },
     }), // Low stock
